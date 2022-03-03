@@ -101,19 +101,63 @@ print(batch_data)
 print(" ")
 print(batch_labels)
 
-""" 
-data = list(vocab.items())
-an_array = np.array(data)
-print(an_array)
 
-print(" ")
-data1 = list(tag_map.items())
-an_array1 = np.array(data1)
-print(an_array1) """
 
     
+import torch.nn as nn
+import torch.nn.functional as F
 
+
+class Parameters():
+    def __init__(self, vocab_size, embedding_dim, lstm_hidden_dim, number_of_tags):
+        self.vocab_size = vocab_size
+        self.embedding_dim = embedding_dim
+        self.lstm_hidden_dim = lstm_hidden_dim
+        self.number_of_tags = number_of_tags
+
+class Net(nn.Module):
+    def __init__(self, params):
+        super(Net, self).__init__()
+
+        #maps each token to an embedding_dim vector
+        self.embedding = nn.Embedding(params.vocab_size, params.embedding_dim)
+
+        #the LSTM takens embedded sentence
+        self.lstm = nn.LSTM(params.embedding_dim, params.lstm_hidden_dim, batch_first=True) # What is LSTM_hidden?
+
+        #fc layer transforms the output to give the final output layer
+        self.fc = nn.Linear(params.lstm_hidden_dim, params.number_of_tags)
     
+    def forward(self, s):
+        #apply the embedding layer that maps each token to its embedding
+        s = self.embedding(s)   # dim: batch_size x batch_max_len x embedding_dim
+
+        #run the LSTM along the sentences of length batch_max_len
+        s, _ = self.lstm(s)     # dim: batch_size x batch_max_len x lstm_hidden_dim                
+
+        #reshape the Variable so that each row contains one token
+        s = s.view(-1, s.shape[2])  # dim: batch_size*batch_max_len x lstm_hidden_dim
+
+        #apply the fully connected layer and obtain the output for each token
+        s = self.fc(s)          # dim: batch_size*batch_max_len x num_tags
+
+        return F.log_softmax(s, dim=1)   # dim: batch_size*batch_max_len x num_tags
+    
+    def loss_fn(outputs, labels):
+        #reshape labels to give a flat vector of length batch_size*seq_len
+        labels = labels.view(-1)  
+
+        #mask out 'PAD' tokens
+        mask = (labels >= 0).float()
+
+        #the number of tokens is the sum of elements in mask
+        num_tokens = int(torch.sum(mask).data[0])
+
+        #pick the values corresponding to labels and multiply by mask
+        outputs = outputs[range(outputs.shape[0]), labels]*mask
+
+        #cross entropy loss for all non 'PAD' tokens
+        return -torch.sum(outputs)/num_tokens
 
 
 
