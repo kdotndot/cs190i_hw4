@@ -1,3 +1,4 @@
+from cmath import inf
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -60,7 +61,7 @@ with open(tags_file) as t:
     """ for i, l in enumerate(t.read().splitlines()):
         tag_map[l] = i """
 vocab["UNK"] = len(vocab)    
-vocab["PAD"] = len(vocab) + 1
+vocab["PAD"] = len(vocab) 
 
 
 
@@ -87,11 +88,12 @@ for x in f:
         arr1 = []
         arr2 = []
 
-MAX_LEN = 0
+MAX_LEN = 0 #1238
 for x in train_sentences:
     if len(x) > MAX_LEN:
         MAX_LEN = len(x)
-NUM_SENTENCES = len(train_sentences)
+NUM_SENTENCES = len(train_sentences) #8322
+
 
 
 batch_data = vocab['PAD']*np.ones((NUM_SENTENCES, MAX_LEN))
@@ -175,11 +177,32 @@ class Net(nn.Module):
         #cross entropy loss for all non 'PAD' tokens
         return -torch.sum(outputs)/num_tokens
 
-params = Parameters(vocab_size = 26103, embedding_dim = 300, lstm_hidden_dim = 256, number_of_tags= 9)
+params = Parameters(vocab_size = 26102, embedding_dim = 300, lstm_hidden_dim = 256, number_of_tags= 9)
 
 Neural_Net = Net(params)
 
-print(Neural_Net.forward(batch_data))
-print(Neural_Net.loss_fn(batch_labels))
+
+soft_max = Neural_Net.forward(batch_data)
+pred_values = []
+
+for x in range(len(soft_max)):
+    max = -inf
+    ind = 0
+    for y in range(9):
+        if soft_max[x][y] > max:
+            max = soft_max[x][y]
+            ind = y
+    pred_values.append(list(tag_map)[ind])
+
+print(batch_labels)
+
+
+
+
+
+
+
+
+#print(Neural_Net.loss_fn(batch_labels))
 
 
