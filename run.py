@@ -82,7 +82,6 @@ for x in f:
             arr1.append(vocab["UNK"])
             arr2.append(tag_map["O"])
     else:
-        
         train_sentences.append(arr1)
         train_labels.append(arr2)
         arr1 = []
@@ -96,7 +95,7 @@ NUM_SENTENCES = len(train_sentences)
 
 
 batch_data = vocab['PAD']*np.ones((NUM_SENTENCES, MAX_LEN))
-batch_labels = -1*np.ones((NUM_SENTENCES, MAX_LEN))
+batch_labels = (-1)*np.ones((NUM_SENTENCES, MAX_LEN))
 
 for j in range(len(train_sentences)):
     cur_len = len(train_sentences[j])
@@ -108,7 +107,9 @@ batch_data, batch_labels = torch.LongTensor(batch_data), torch.LongTensor(batch_
 #convert Tensors to Variables
 batch_data, batch_labels = Variable(batch_data), Variable(batch_labels)
 
-print(batch_data)
+batch_data = batch_data[:4]
+batch_labels = batch_labels[:4]
+
 
 
 import torch.nn as nn
@@ -150,7 +151,7 @@ class Net(nn.Module):
         s, _ = self.lstm(s)     # dim: batch_size x batch_max_len x lstm_hidden_dim                
 
         #reshape the Variable so that each row contains one token
-        s = s.view(-1, s.shape[2])  # dim: batch_size*batch_max_len x lstm_hidden_dim
+        s = s.reshape(-1, s.shape[2])  # dim: batch_size*batch_max_len x lstm_hidden_dim
 
         #apply the fully connected layer and obtain the output for each token
         s = self.fc(s)          # dim: batch_size*batch_max_len x num_tags
@@ -159,13 +160,14 @@ class Net(nn.Module):
     
     def loss_fn(outputs, labels):
         #reshape labels to give a flat vector of length batch_size*seq_len
-        labels = labels.view(-1)  
-
+        
+        labels = labels.reshape(-1)  
+        
         #mask out 'PAD' tokens
         mask = (labels >= 0).float()
-
+        
         #the number of tokens is the sum of elements in mask
-        num_tokens = int(torch.sum(mask).data[0])
+        num_tokens = int(torch.sum(mask).item())
 
         #pick the values corresponding to labels and multiply by mask
         outputs = outputs[range(outputs.shape[0]), labels]*mask
@@ -177,5 +179,7 @@ params = Parameters(vocab_size = 26103, embedding_dim = 300, lstm_hidden_dim = 2
 
 Neural_Net = Net(params)
 
-Neural_Net.forward(batch_data)
+print(Neural_Net.forward(batch_data))
+print(Neural_Net.loss_fn(batch_labels))
+
 
