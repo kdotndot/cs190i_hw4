@@ -41,16 +41,27 @@ maxwords = 0
 maxtags = 0
 
 #Building vocab and tag_map dictionary
+count = 0
 with open(words_file) as w:
-    for i, l in enumerate(w.read().splitlines()):
-        if int(i) > maxwords:
-            maxwords = int(i)
-        vocab[l] = i
+    for x in w:
+        x = x[:len(x) - 1]
+        if x not in vocab.keys():
+            vocab[x] = count
+            count += 1
+    """ for i, l in enumerate(w.read().splitlines()):
+        vocab[l] = i """
+count = 0
 with open(tags_file) as t:
-    for i, l in enumerate(t.read().splitlines()):
-        tag_map[l] = i
-vocab["UNK"] = maxwords + 1     
-vocab["PAD"] = -1
+    for x in t:
+        x = x[:len(x) - 1]
+        if x not in tag_map.keys():
+            tag_map[x] = count
+            count += 1
+    """ for i, l in enumerate(t.read().splitlines()):
+        tag_map[l] = i """
+vocab["UNK"] = len(vocab)    
+vocab["PAD"] = len(vocab) + 1
+
 
 
 train_sentences = []        
@@ -98,14 +109,15 @@ batch_data, batch_labels = torch.LongTensor(batch_data), torch.LongTensor(batch_
 batch_data, batch_labels = Variable(batch_data), Variable(batch_labels)
 
 print(batch_data)
-print(" ")
-print(batch_labels)
 
 
-
-    
 import torch.nn as nn
 import torch.nn.functional as F
+#Vocab_size = 26102
+#Embedding_dim = 300
+#LSTM_hidden_dim = number of tags = 256
+#Number_of_Tags = len(tags) = 9
+
 
 
 class Parameters():
@@ -114,6 +126,8 @@ class Parameters():
         self.embedding_dim = embedding_dim
         self.lstm_hidden_dim = lstm_hidden_dim
         self.number_of_tags = number_of_tags
+
+
 
 class Net(nn.Module):
     def __init__(self, params):
@@ -159,13 +173,9 @@ class Net(nn.Module):
         #cross entropy loss for all non 'PAD' tokens
         return -torch.sum(outputs)/num_tokens
 
+params = Parameters(vocab_size = 26103, embedding_dim = 300, lstm_hidden_dim = 256, number_of_tags= 9)
 
+Neural_Net = Net(params)
 
-
-
-
-
-
-
-
+Neural_Net.forward(batch_data)
 
